@@ -1,6 +1,7 @@
 package main
 
 import (
+	"config"
 	"crypto/tls"
 	"encoding/json"
 	"flag"
@@ -19,7 +20,6 @@ var (
 	interval         *int
 	insecure         *bool
 	configFileName   *string
-	config           map[string]string
 	nodeStatesBuffer = NewNodeStatesBuffer()
 )
 
@@ -35,22 +35,46 @@ func main() {
 // parseConfigFile decodes the configuration JSON
 // file into a map.
 func parseConfigFile() {
-	configFile, err := os.Open(*configFileName)
-	if err != nil {
-		panic(err.Error())
+	// Attempt to parse config file. If successful,
+	// exit immediately.
+	parseErr := config.ParseFile(*configFileName)
+	if parseErr == nil {
+		return
 	}
 
-	err = json.NewDecoder(configFile).Decode(&config)
-	if err != nil {
-		panic(err.Error())
+	// Does file actually exist?
+	// If yes, panic
+	if _, err := os.Stat(*configFileName); err == nil {
+		panic(parseErr)
 	}
+
+	// Are we attempting to load the default config file?
+	// If no, panic
+	if *configFileName != config.DefaultFileName {
+		panic(parseErr)
+	}
+
+	// Default config file is requested but does
+	// not exist, so let's help the user out and
+	// create one for them.
+	err := config.WriteDefaultFile()
+	if err != nil {
+		panic(err)
+	}
+
+	// Now try parsing the generated config file.
+	err = config.ParseFile(*configFileName)
+	if err != nil {
+		panic(err)
+	}
+	log.Println("Config file \"" + *configFileName + "\" was not found. A default file was created and loaded instead.")
 }
 
 func parseFlagsAndArgs() {
 	port = flag.Int("port", 8080, "The port on which to access the results.")
 	interval = flag.Int("interval", 60, "The interval between each UI refresh in seconds.")
 	insecure = flag.Bool("insecure", false, "If set, will not verify the servers' certificate chain and host name.")
-	configFileName = flag.String("config", "config.json", "The name of the configuration file.")
+	configFileName = flag.String("config", config.DefaultFileName, "The name of the configuration file.")
 	flag.Parse()
 }
 
@@ -88,7 +112,7 @@ func monitorNodes() {
 		for {
 			states := &NodeStates{}
 
-			for name, url := range config {
+			for name, url := range config.Nodes {
 				state := &NodeState{}
 				state.Name = name
 				state.URL = url
