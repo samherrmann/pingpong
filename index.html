@@ -40,6 +40,15 @@
                 background-color: red;
             }
         </style>
+
+        <script type="text/javascript">
+            function periodicReload() {
+                setInterval(function() {
+                    location.reload()
+                }, {{.PollingInterval}} * 1000)
+            };
+            window.onload = periodicReload;
+        </script>
     </head>
     <body>
         <table>
@@ -50,7 +59,7 @@
                 </th> 
                <th>Notes</th>
             </tr>
-            {{ range $result := . }}
+            {{ range $result := .Results }}
                 <tr class="{{if $result.IsOK}} status-ok {{ else }} status-failure {{ end }}">
                     <td>{{$result.URL}}</td>
                     <td>{{$result.Code}}</td>

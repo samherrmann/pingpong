@@ -10,8 +10,9 @@ import (
 )
 
 var (
-	port *int
-	urls []string
+	port     *int
+	interval *int
+	urls     []string
 )
 
 func main() {
@@ -23,6 +24,7 @@ func main() {
 
 func parseFlagsAndArgs() {
 	port = flag.Int("port", 8080, "The port on which to access the results.")
+	interval = flag.Int("interval", 60, "The interval between each UI refresh in seconds.")
 	flag.Parse()
 	urls = flag.Args()
 }
@@ -38,7 +40,7 @@ func registerUI() {
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
-		tpl.Execute(w, results)
+		tpl.Execute(w, &ViewModel{*interval, results})
 	})
 }
 
@@ -106,3 +108,10 @@ type TestResult struct {
 
 // TestResults ...
 type TestResults []TestResult
+
+// ViewModel is the data structure for the UI template.
+type ViewModel struct {
+	// Polling interval in seconds
+	PollingInterval int
+	Results         *TestResults
+}
