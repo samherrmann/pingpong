@@ -62,12 +62,12 @@
     </head>
     <body>
         <h1>pingpong - Network Nodes Status</h1>
-        {{ range $result := .Results }}
-            <div class="card {{if $result.IsOK}} status-ok {{ else }} status-failure {{ end }}">
-                <div class="name">{{$result.Name}}</div>
-                <div class="url">{{$result.URL}}</div>
-                <div class="method">{{$result.Method}}</div>
-                <div class="note">{{$result.Note}}</div>
+        {{ range $state := .States }}
+            <div class="card {{if $state.IsOK}} status-ok {{ else }} status-failure {{ end }}">
+                <div class="name">{{$state.Name}}</div>
+                <div class="url">{{$state.URL}}</div>
+                <div class="method">{{$state.Method}}</div>
+                <div class="note">{{$state.Note}}</div>
             </div>
         {{ end }}
     </body>

@@ -12,14 +12,16 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"time"
 )
 
 var (
-	port           *int
-	interval       *int
-	insecure       *bool
-	configFileName *string
-	config         map[string]string
+	port             *int
+	interval         *int
+	insecure         *bool
+	configFileName   *string
+	config           map[string]string
+	nodeStatesBuffer = NewNodeStatesBuffer()
 )
 
 func main() {
@@ -27,6 +29,7 @@ func main() {
 	parseConfigFile()
 	registerUI()
 	registerAPI()
+	monitorNodes()
 	listenAndServe()
 }
 
@@ -56,14 +59,12 @@ func parseFlagsAndArgs() {
 // in a web user interface
 func registerUI() {
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		results := testNodes()
-
 		tpl, err := template.ParseFiles("index.html")
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
-		tpl.Execute(w, &ViewModel{*interval, results})
+		tpl.Execute(w, &ViewModel{*interval, nodeStatesBuffer.Get()})
 	})
 }
 
@@ -71,51 +72,56 @@ func registerUI() {
 // in JSON format
 func registerAPI() {
 	http.HandleFunc("/json", func(w http.ResponseWriter, r *http.Request) {
-		results := testNodes()
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(results)
+		json.NewEncoder(w).Encode(nodeStatesBuffer.Get())
 	})
 }
 
-// testNodes calls the getHTTPStatus function for
+// monitorNodes calls the getHTTPStatus function for
 // all addresses in the config file that have a "http"
 // prefix, and calls the ping function for all other
-// provided addresses.
-func testNodes() *TestResults {
-	results := TestResults{}
+// provided addresses. This function is executed in a
+// goroutine and is therefore non-blocking.
+func monitorNodes() {
+	go func() {
+		for {
+			states := &NodeStates{}
 
-	for name, url := range config {
-		result := TestResult{}
-		result.Name = name
-		result.URL = url
+			for name, url := range config {
+				state := &NodeState{}
+				state.Name = name
+				state.URL = url
 
-		if strings.HasPrefix(result.URL, "http") {
-			result.Method = "HTTP/S"
+				if strings.HasPrefix(state.URL, "http") {
+					state.Method = "HTTP/S"
 
-			code, err := getHTTPStatus(result.URL)
-			if err != nil {
-				result.Note = err.Error()
+					code, err := getHTTPStatus(state.URL)
+					if err != nil {
+						state.Note = err.Error()
+					}
+
+					if code >= 200 && code < 300 {
+						state.IsOK = true
+					}
+
+				} else {
+					state.Method = "Ping"
+
+					err := ping(state.URL)
+					if err != nil {
+						state.Note = err.Error()
+					} else {
+						state.IsOK = true
+					}
+				}
+
+				*states = append(*states, *state)
 			}
-
-			if code >= 200 && code < 300 {
-				result.IsOK = true
-			}
-
-		} else {
-			result.Method = "Ping"
-
-			err := ping(result.URL)
-			if err != nil {
-				result.Note = err.Error()
-			} else {
-				result.IsOK = true
-			}
+			sort.Sort(states)
+			nodeStatesBuffer.Set(states)
+			time.Sleep(time.Duration(*interval) * time.Second)
 		}
-
-		results = append(results, result)
-	}
-	sort.Sort(&results)
-	return &results
+	}()
 }
 
 // getHTTPStatus issues an HTTP GET call to the specified URL
@@ -165,42 +171,4 @@ func httpClient() *http.Client {
 func listenAndServe() {
 	log.Println("Listening on port " + strconv.Itoa(*port))
 	http.ListenAndServe(":"+strconv.Itoa(*port), nil)
-}
-
-// TestResult ...
-type TestResult struct {
-	// The name of the service
-	Name string
-	// The URL under test
-	URL string
-	// True if the status code is 2xx
-	IsOK bool
-	// Notes such as error messages
-	Note string
-	// The method that was used to test
-	// the service's availability
-	// (ex: ping or http)
-	Method string
-}
-
-// TestResults ...
-type TestResults []TestResult
-
-func (results TestResults) Len() int {
-	return len(results)
-}
-
-func (results TestResults) Less(i, j int) bool {
-	return results[i].Name < results[j].Name
-}
-
-func (results TestResults) Swap(i, j int) {
-	results[i], results[j] = results[j], results[i]
-}
-
-// ViewModel is the data structure for the UI template.
-type ViewModel struct {
-	// Polling interval in seconds
-	PollingInterval int
-	Results         *TestResults
 }
