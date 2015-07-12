@@ -58,12 +58,12 @@ func parseFlagsAndArgs() {
 // registerUI registers an HTTP handler function that presents the results
 // in a web user interface
 func registerUI() {
+	tpl, err := template.ParseFiles("index.html")
+	if err != nil {
+		panic(err)
+	}
+
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		tpl, err := template.ParseFiles("index.html")
-		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-			return
-		}
 		tpl.Execute(w, &ViewModel{*interval, nodeStatesBuffer.Get()})
 	})
 }
