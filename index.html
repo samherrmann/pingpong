@@ -16,6 +16,12 @@
             body {
                 padding: 25px;
                 box-sizing: border-box;
+                background-color: #333
+            }
+
+            h1 {
+                text-align: center;
+                color: white;
             }
 
             .card {
@@ -23,6 +29,16 @@
                 text-align: center;
                 padding: 10px;
                 margin: 10px;
+                font-size: 20px;
+            }
+
+            .card .url {
+                margin-bottom: 5px;
+            }
+
+            .card .method,
+            .card .note {
+                font-size: 14px;
             }
 
             .status-ok {
@@ -44,11 +60,12 @@
         </script>
     </head>
     <body>
+        <h1>pingpong - Network service status</h1>
         {{ range $result := .Results }}
             <div class="card {{if $result.IsOK}} status-ok {{ else }} status-failure {{ end }}">
-                <div>{{$result.URL}}</div>
-                <div>{{$result.Method}}</div>
-                <div>{{$result.Note}}</div>
+                <div class="url">{{$result.URL}}</div>
+                <div class="method">{{$result.Method}}</div>
+                <div class="note">{{$result.Note}}</div>
             </div>
         {{ end }}
     </body>
