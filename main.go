@@ -68,6 +68,7 @@ func testNodes(urls []string) *TestResults {
 
 	for _, url := range urls {
 		result := TestResult{}
+		result.Name = "Service"
 		result.URL = url
 
 		if strings.HasPrefix(url, "http") {
@@ -146,6 +147,8 @@ func listenAndServe() {
 
 // TestResult ...
 type TestResult struct {
+	// The name of the service
+	Name string
 	// The URL under test
 	URL string
 	// True if the status code is 2xx

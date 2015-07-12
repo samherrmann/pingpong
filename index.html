@@ -32,10 +32,11 @@
                 font-size: 20px;
             }
 
-            .card .url {
+            .card .name {
                 margin-bottom: 5px;
             }
 
+            .card .url,
             .card .method,
             .card .note {
                 font-size: 14px;
@@ -63,6 +64,7 @@
         <h1>pingpong - Network service status</h1>
         {{ range $result := .Results }}
             <div class="card {{if $result.IsOK}} status-ok {{ else }} status-failure {{ end }}">
+                <div class="name">{{$result.Name}}</div>
                 <div class="url">{{$result.URL}}</div>
                 <div class="method">{{$result.Method}}</div>
                 <div class="note">{{$result.Note}}</div>
