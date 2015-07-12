@@ -7,38 +7,50 @@ import (
 	"html/template"
 	"log"
 	"net/http"
+	"os"
 	"os/exec"
 	"strconv"
 	"strings"
 )
 
 var (
-	port     *int
-	interval *int
-	urls     []string
-	insecure *bool
+	port           *int
+	interval       *int
+	insecure       *bool
+	configFileName *string
+	config         map[string]string
 )
 
 func main() {
 	parseFlagsAndArgs()
+	parseConfigFile()
 	registerUI()
 	registerAPI()
 	listenAndServe()
+}
+
+func parseConfigFile() {
+	configFile, err := os.Open(*configFileName)
+	if err != nil {
+		panic(err.Error())
+	}
+	json.NewDecoder(configFile).Decode(&config)
 }
 
 func parseFlagsAndArgs() {
 	port = flag.Int("port", 8080, "The port on which to access the results.")
 	interval = flag.Int("interval", 60, "The interval between each UI refresh in seconds.")
 	insecure = flag.Bool("insecure", false, "If set, will not verify the servers' certificate chain and host name.")
+	configFileName = flag.String("config", "config.json", "The name of the configuration file.")
 	flag.Parse()
-	urls = flag.Args()
+
 }
 
 // registerUI registers an HTTP handler function that presents the results
 // in a web user interface
 func registerUI() {
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		results := testNodes(urls)
+		results := testNodes()
 
 		tpl, err := template.ParseFiles("index.html")
 		if err != nil {
@@ -53,22 +65,22 @@ func registerUI() {
 // in JSON format
 func registerAPI() {
 	http.HandleFunc("/json", func(w http.ResponseWriter, r *http.Request) {
-		results := testNodes(urls)
+		results := testNodes()
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(results)
 	})
 }
 
 // testNodes calls the getHTTPStatus function for
-// all provided URLs that have a "http" prefix,
-// and also calls the ping function for all other
+// all addresses in the config file that have a "http"
+// prefix, and calls the ping function for all other
 // provided addresses.
-func testNodes(urls []string) *TestResults {
+func testNodes() *TestResults {
 	results := TestResults{}
 
-	for _, url := range urls {
+	for name, url := range config {
 		result := TestResult{}
-		result.Name = "Service"
+		result.Name = name
 		result.URL = url
 
 		if strings.HasPrefix(url, "http") {
