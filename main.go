@@ -1,6 +1,7 @@
 package main
 
 import (
+	"crypto/tls"
 	"encoding/json"
 	"flag"
 	"html/template"
@@ -13,6 +14,7 @@ var (
 	port     *int
 	interval *int
 	urls     []string
+	insecure *bool
 )
 
 func main() {
@@ -25,6 +27,7 @@ func main() {
 func parseFlagsAndArgs() {
 	port = flag.Int("port", 8080, "The port on which to access the results.")
 	interval = flag.Int("interval", 60, "The interval between each UI refresh in seconds.")
+	insecure = flag.Bool("insecure", false, "If set, will not verify the servers' certificate chain and host name.")
 	flag.Parse()
 	urls = flag.Args()
 }
@@ -81,12 +84,25 @@ func testNodes(urls []string) *TestResults {
 // and returns the HTTP status code. 0 is returned along with
 // an error if the HTTP call could not be completed successfully.
 func getHTTPStatus(url string) (code int, err error) {
-	res, err := http.Get(url)
+	res, err := httpClient().Get(url)
 	if err != nil {
 		return 0, err
 	}
 	defer res.Body.Close()
 	return res.StatusCode, nil
+}
+
+func httpClient() *http.Client {
+
+	if *insecure {
+		transCfg := &http.Transport{
+			TLSClientConfig: &tls.Config{
+				InsecureSkipVerify: true,
+			},
+		}
+		return &http.Client{Transport: transCfg}
+	}
+	return http.DefaultClient
 }
 
 func listenAndServe() {
