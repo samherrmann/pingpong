@@ -8,7 +8,6 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"os/exec"
 	"sort"
 	"strconv"
 	"strings"
@@ -134,22 +133,6 @@ func getHTTPStatus(url string) (code int, err error) {
 	}
 	defer res.Body.Close()
 	return res.StatusCode, nil
-}
-
-// ping returns nil if the specified IP address
-// is responsive to pings, and returns an error
-// otherwise
-//
-// NOTE: Currently only supported on Linux
-func ping(ipAddr string) (err error) {
-	cmd := exec.Command("ping", "-c", "1", "-w", "1", ipAddr)
-	if err := cmd.Start(); err != nil {
-		return err
-	}
-	if err := cmd.Wait(); err != nil {
-		return err
-	}
-	return nil
 }
 
 // httpClient returns a HTTP client that does not
