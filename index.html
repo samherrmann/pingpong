@@ -61,7 +61,7 @@
         </script>
     </head>
     <body>
-        <h1>pingpong - Network service status</h1>
+        <h1>pingpong - Network Service Status</h1>
         {{ range $result := .Results }}
             <div class="card {{if $result.IsOK}} status-ok {{ else }} status-failure {{ end }}">
                 <div class="name">{{$result.Name}}</div>
