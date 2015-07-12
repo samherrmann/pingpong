@@ -18,25 +18,18 @@
                 box-sizing: border-box;
             }
 
-            table {
-                width: 100%;
-                border-collapse: collapse;
-            }
-
-            table td {
-                padding: 20px;
+            .card {
+                float: left;
                 text-align: center;
+                padding: 10px;
+                margin: 10px;
             }
 
-            table tr:not(:last-child) td {
-                border-bottom: 1px solid white;
-            }
-
-            .status-ok td {
+            .status-ok {
                 background-color: #9BE53D;
             }
 
-            .status-failure td {
+            .status-failure {
                 background-color: #E55934;
             }
         </style>
@@ -51,19 +44,12 @@
         </script>
     </head>
     <body>
-        <table>
-            <tr>
-               <th>URL</th>
-               <th>Test Method</th>
-               <th>Notes</th>
-            </tr>
-            {{ range $result := .Results }}
-                <tr class="{{if $result.IsOK}} status-ok {{ else }} status-failure {{ end }}">
-                    <td>{{$result.URL}}</td>
-                    <td>{{$result.Method}}</td>
-                    <td>{{$result.Note}}</td>
-                </tr>
-            {{ end }}
-        </table>
+        {{ range $result := .Results }}
+            <div class="card {{if $result.IsOK}} status-ok {{ else }} status-failure {{ end }}">
+                <div>{{$result.URL}}</div>
+                <div>{{$result.Method}}</div>
+                <div>{{$result.Note}}</div>
+            </div>
+        {{ end }}
     </body>
 </html>
