@@ -116,7 +116,7 @@ func getHTTPStatus(url string) (code int, err error) {
 //
 // NOTE: Currently only supported on Linux
 func ping(ipAddr string) (err error) {
-	cmd := exec.Command("ping", "-c", "1", ipAddr)
+	cmd := exec.Command("ping", "-c", "1", "-w", "1", ipAddr)
 	if err := cmd.Start(); err != nil {
 		return err
 	}
