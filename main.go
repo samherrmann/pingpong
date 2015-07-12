@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"sort"
 	"strconv"
 	"strings"
 )
@@ -29,12 +30,18 @@ func main() {
 	listenAndServe()
 }
 
+// parseConfigFile decodes the configuration JSON
+// file into a map.
 func parseConfigFile() {
 	configFile, err := os.Open(*configFileName)
 	if err != nil {
 		panic(err.Error())
 	}
-	json.NewDecoder(configFile).Decode(&config)
+
+	err = json.NewDecoder(configFile).Decode(&config)
+	if err != nil {
+		panic(err.Error())
+	}
 }
 
 func parseFlagsAndArgs() {
@@ -43,7 +50,6 @@ func parseFlagsAndArgs() {
 	insecure = flag.Bool("insecure", false, "If set, will not verify the servers' certificate chain and host name.")
 	configFileName = flag.String("config", "config.json", "The name of the configuration file.")
 	flag.Parse()
-
 }
 
 // registerUI registers an HTTP handler function that presents the results
@@ -83,10 +89,10 @@ func testNodes() *TestResults {
 		result.Name = name
 		result.URL = url
 
-		if strings.HasPrefix(url, "http") {
+		if strings.HasPrefix(result.URL, "http") {
 			result.Method = "HTTP/S"
 
-			code, err := getHTTPStatus(url)
+			code, err := getHTTPStatus(result.URL)
 			if err != nil {
 				result.Note = err.Error()
 			}
@@ -98,7 +104,7 @@ func testNodes() *TestResults {
 		} else {
 			result.Method = "Ping"
 
-			err := ping(url)
+			err := ping(result.URL)
 			if err != nil {
 				result.Note = err.Error()
 			} else {
@@ -108,6 +114,7 @@ func testNodes() *TestResults {
 
 		results = append(results, result)
 	}
+	sort.Sort(&results)
 	return &results
 }
 
@@ -175,6 +182,18 @@ type TestResult struct {
 
 // TestResults ...
 type TestResults []TestResult
+
+func (results TestResults) Len() int {
+	return len(results)
+}
+
+func (results TestResults) Less(i, j int) bool {
+	return results[i].Name < results[j].Name
+}
+
+func (results TestResults) Swap(i, j int) {
+	results[i], results[j] = results[j], results[i]
+}
 
 // ViewModel is the data structure for the UI template.
 type ViewModel struct {
