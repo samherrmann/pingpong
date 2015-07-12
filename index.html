@@ -54,15 +54,13 @@
         <table>
             <tr>
                <th>URL</th>
-               <th title="A status code of 0 means that there was no response. See the notes column for details">
-                   Status Code*
-                </th> 
+               <th>Test Method</th>
                <th>Notes</th>
             </tr>
             {{ range $result := .Results }}
                 <tr class="{{if $result.IsOK}} status-ok {{ else }} status-failure {{ end }}">
                     <td>{{$result.URL}}</td>
-                    <td>{{$result.Code}}</td>
+                    <td>{{$result.Method}}</td>
                     <td>{{$result.Note}}</td>
                 </tr>
             {{ end }}

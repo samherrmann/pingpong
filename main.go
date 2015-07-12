@@ -7,7 +7,9 @@ import (
 	"html/template"
 	"log"
 	"net/http"
+	"os/exec"
 	"strconv"
+	"strings"
 )
 
 var (
@@ -57,24 +59,40 @@ func registerAPI() {
 	})
 }
 
-// testNodes calls the getHTTPStatus method for
-// all provided URLs
+// testNodes calls the getHTTPStatus function for
+// all provided URLs that have a "http" prefix,
+// and also calls the ping function for all other
+// provided addresses.
 func testNodes(urls []string) *TestResults {
 	results := TestResults{}
 
 	for _, url := range urls {
 		result := TestResult{}
-
-		code, err := getHTTPStatus(url)
-		if err != nil {
-			result.Note = err.Error()
-		}
 		result.URL = url
-		result.Code = code
 
-		if code >= 200 && code < 300 {
-			result.IsOK = true
+		if strings.HasPrefix(url, "http") {
+			result.Method = "HTTP/S"
+
+			code, err := getHTTPStatus(url)
+			if err != nil {
+				result.Note = err.Error()
+			}
+
+			if code >= 200 && code < 300 {
+				result.IsOK = true
+			}
+
+		} else {
+			result.Method = "Ping"
+
+			err := ping(url)
+			if err != nil {
+				result.Note = err.Error()
+			} else {
+				result.IsOK = true
+			}
 		}
+
 		results = append(results, result)
 	}
 	return &results
@@ -90,6 +108,22 @@ func getHTTPStatus(url string) (code int, err error) {
 	}
 	defer res.Body.Close()
 	return res.StatusCode, nil
+}
+
+// ping returns nil if the specified IP address
+// is responsive to pings, and returns an error
+// otherwise
+//
+// NOTE: Currently only supported on Linux
+func ping(ipAddr string) (err error) {
+	cmd := exec.Command("ping", "-c", "1", ipAddr)
+	if err := cmd.Start(); err != nil {
+		return err
+	}
+	if err := cmd.Wait(); err != nil {
+		return err
+	}
+	return nil
 }
 
 func httpClient() *http.Client {
@@ -116,10 +150,12 @@ type TestResult struct {
 	URL string
 	// True if the status code is 2xx
 	IsOK bool
-	// HTTP Status code
-	Code int
 	// Notes such as error messages
 	Note string
+	// The method that was used to test
+	// the service's availability
+	// (ex: ping or http)
+	Method string
 }
 
 // TestResults ...
