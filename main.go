@@ -54,10 +54,12 @@ func parseFlagsAndArgs() {
 	flag.Parse()
 }
 
+//go:generate go run scripts/template.go
+
 // registerUI registers an HTTP handler function that presents the results
 // in a web user interface
 func registerUI() {
-	tpl, err := template.ParseFiles("index.html")
+	tpl, err := template.New("index.html").Parse(indexHTML)
 	if err != nil {
 		panic(err)
 	}
