@@ -146,6 +146,9 @@ func ping(ipAddr string) (err error) {
 	return nil
 }
 
+// httpClient returns a HTTP client that does not
+// verify a server's certificate chain and host name
+// if the "insecure" command-line flag in set to true.
 func httpClient() *http.Client {
 
 	if *insecure {
