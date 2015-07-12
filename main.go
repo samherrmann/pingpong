@@ -1,7 +1,6 @@
 package main
 
 import (
-	"config"
 	"crypto/tls"
 	"encoding/json"
 	"flag"
@@ -13,6 +12,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"pingpong/config"
 )
 
 var (
