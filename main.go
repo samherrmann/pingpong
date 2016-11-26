@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os"
 	"pingpong/config"
+	"pingpong/ping"
 	"sort"
 	"strconv"
 	"strings"
@@ -144,7 +145,7 @@ func monitorNodes() {
 				} else {
 					state.Method = "Ping"
 
-					err := ping(state.URL, timeout)
+					err := ping.Run(state.URL, timeout)
 					if err != nil {
 						state.Note = err.Error()
 					} else {
