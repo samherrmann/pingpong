@@ -4,3 +4,4 @@
 dist/
 *.exe
 *.html.go
+config.json

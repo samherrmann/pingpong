@@ -8,11 +8,11 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"pingpong/config"
 	"sort"
 	"strconv"
 	"strings"
 	"time"
-	"pingpong/config"
 )
 
 var (
@@ -21,10 +21,15 @@ var (
 	insecure         *bool
 	configFileName   *string
 	nodeStatesBuffer = NewNodeStatesBuffer()
+
+	// timeout is the network node-polling
+	// timeout in seconds.
+	timeout int
 )
 
 func main() {
-	parseFlagsAndArgs()
+	parseFlags()
+	postFlagsParsingInit()
 	parseConfigFile()
 	registerUI()
 	registerAPI()
@@ -70,12 +75,19 @@ func parseConfigFile() {
 	log.Println("Config file \"" + *configFileName + "\" was not found. A default file was created and loaded instead.")
 }
 
-func parseFlagsAndArgs() {
+func parseFlags() {
 	port = flag.Int("port", 8080, "The port on which to access the results.")
 	interval = flag.Int("interval", 60, "The interval between each UI refresh in seconds.")
 	insecure = flag.Bool("insecure", false, "If set, will not verify the servers' certificate chain and host name.")
 	configFileName = flag.String("config", config.DefaultFileName, "The name of the configuration file.")
 	flag.Parse()
+}
+
+// postFlagsParsingInit performs initialization work
+// that depends on values that are provided through
+// command-line flags.
+func postFlagsParsingInit() {
+	timeout = *interval / 2
 }
 
 //go:generate go run scripts/template.go
@@ -132,7 +144,7 @@ func monitorNodes() {
 				} else {
 					state.Method = "Ping"
 
-					err := ping(state.URL)
+					err := ping(state.URL, timeout)
 					if err != nil {
 						state.Note = err.Error()
 					} else {
@@ -166,15 +178,20 @@ func getHTTPStatus(url string) (code int, err error) {
 // if the "insecure" command-line flag in set to true.
 func httpClient() *http.Client {
 
+	timeout := time.Duration(timeout) * time.Second
+
 	if *insecure {
-		transCfg := &http.Transport{
+		transport := &http.Transport{
 			TLSClientConfig: &tls.Config{
 				InsecureSkipVerify: true,
 			},
 		}
-		return &http.Client{Transport: transCfg}
+		return &http.Client{
+			Transport: transport,
+			Timeout:   timeout,
+		}
 	}
-	return http.DefaultClient
+	return &http.Client{Timeout: timeout}
 }
 
 func listenAndServe() {
