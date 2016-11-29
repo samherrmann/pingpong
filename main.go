@@ -26,9 +26,17 @@ var (
 	// timeout is the network node-polling
 	// timeout in seconds.
 	timeout int
+
+	// version is the version of this software,
+	// and should be initialized through the
+	// following build flags:
+	// go build -ldflags "-X main.version=version"
+	version = "latest"
 )
 
 func main() {
+	log.Println("Running pingpong version " + version)
+
 	parseFlags()
 	postFlagsParsingInit()
 	parseConfigFile()

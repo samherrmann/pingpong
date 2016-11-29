@@ -45,7 +45,7 @@ func goBuild(goos string, goarch string, name string) {
 	os.Setenv("goarch", goarch)
 
 	out := filepath.Join(distRoot, name+exeSuffix())
-	cmd("go", "build", "-o", out).Run()
+	cmd("go", "build", "-o", out, "-ldflags", "-X main.version="+version).Run()
 }
 
 // gitVersion returns the tag of the HEAD, if one exists,
