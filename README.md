@@ -39,8 +39,20 @@ If an address of a network node starts with prefix `http://` or `https://`, `pin
 * [VS Code](http://code.visualstudio.com/) (with [vscode-go](https://github.com/Microsoft/vscode-go) extension)
 
 ### Building
-Terminal:
+
+
+#### For Development
 ```bash
 $ go generate
 $ go build
 ```
+* Only builds for the currently set `GOOS` and `GOARCH`
+* Does **not** embed the software version in the build
+
+
+#### For Distribution
+```bash
+$ go run build/main.go
+```
+* Automatically creates 32-bit and 64-bit builds for Windows as well as Linux
+* Embeds the software version in the build

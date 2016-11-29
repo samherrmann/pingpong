@@ -91,7 +91,7 @@ func postFlagsParsingInit() {
 	timeout = *interval / 2
 }
 
-//go:generate go run scripts/template.go
+//go:generate go run build/template/main.go
 
 // registerUI registers an HTTP handler function that presents the results
 // in a web user interface
