@@ -51,8 +51,11 @@ $ go build
 
 
 #### For Distribution
+Prerequisite: If you don't have `gowrap` installed, install it by following its [installation instructions](https://github.com/samherrmann/gowrap#installation).
+
+If `gowrap` is installed, run it from the terminal:
 ```bash
-$ go run build/main.go
+$ gowrap
 ```
-* Automatically creates 32-bit and 64-bit builds for Windows as well as Linux
+* Automatically creates builds for all the platforms listed in `gowrap.json`
 * Embeds the software version in the build
