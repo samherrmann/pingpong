@@ -8,12 +8,13 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"pingpong/config"
-	"pingpong/ping"
 	"sort"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/samherrmann/pingpong/config"
+	"github.com/samherrmann/pingpong/ping"
 )
 
 var (
