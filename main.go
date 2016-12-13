@@ -40,33 +40,48 @@ func main() {
 
 	parseFlags()
 	postFlagsParsingInit()
-	parseConfigFile()
-	registerUI()
+
+	err := parseConfigFile()
+	if err != nil {
+		log.Printf("Error while parsing config file: %v", err)
+		return
+	}
+
+	err = registerUI()
+	if err != nil {
+		log.Printf("Error while registering UI: %v", err)
+		return
+	}
+
 	registerAPI()
 	monitorNodes()
-	listenAndServe()
+
+	err = listenAndServe()
+	if err != nil {
+		log.Printf("Error while listening for requests: %v", err)
+		return
+	}
 }
 
 // parseConfigFile decodes the configuration JSON
 // file into a map.
-func parseConfigFile() {
+func parseConfigFile() error {
 	// Attempt to parse config file. If successful,
 	// exit immediately.
 	parseErr := config.ParseFile(*configFileName)
 	if parseErr == nil {
-		return
+		return nil
 	}
 
-	// Does file actually exist?
-	// If yes, panic
+	// Does file actually exist? If yes, return parse-error
 	if _, err := os.Stat(*configFileName); err == nil {
-		panic(parseErr)
+		return parseErr
 	}
 
 	// Are we attempting to load the default config file?
-	// If no, panic
+	// If no, return parse-error
 	if *configFileName != config.DefaultFileName {
-		panic(parseErr)
+		return parseErr
 	}
 
 	// Default config file is requested but does
@@ -74,15 +89,16 @@ func parseConfigFile() {
 	// create one for them.
 	err := config.WriteDefaultFile()
 	if err != nil {
-		panic(err)
+		return err
 	}
 
 	// Now try parsing the generated config file.
 	err = config.ParseFile(*configFileName)
 	if err != nil {
-		panic(err)
+		return err
 	}
 	log.Println("Config file \"" + *configFileName + "\" was not found. A default file was created and loaded instead.")
+	return nil
 }
 
 func parseFlags() {
@@ -104,15 +120,16 @@ func postFlagsParsingInit() {
 
 // registerUI registers an HTTP handler function that presents the results
 // in a web user interface
-func registerUI() {
+func registerUI() error {
 	tpl, err := template.New("index.html").Parse(indexHTML)
 	if err != nil {
-		panic(err)
+		return err
 	}
 
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		tpl.Execute(w, &ViewModel{*interval, nodeStatesBuffer.Get()})
 	})
+	return nil
 }
 
 // registerAPI registers an HTTP handler function that provides  the results
@@ -204,7 +221,7 @@ func httpClient() *http.Client {
 	return &http.Client{Timeout: timeout}
 }
 
-func listenAndServe() {
+func listenAndServe() error {
 	log.Println("Listening on port " + strconv.Itoa(*port))
-	http.ListenAndServe(":"+strconv.Itoa(*port), nil)
+	return http.ListenAndServe(":"+strconv.Itoa(*port), nil)
 }
