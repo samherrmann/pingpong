@@ -32,7 +32,7 @@
                 text-align: center;
                 padding: 10px;
                 margin: 10px;
-                font-size: 20px;
+                font-size: 14px;
             }
 
             .card a {
@@ -43,13 +43,8 @@
             }
 
             .card .name {
+                font-size: 20px;
                 margin-bottom: 5px;
-            }
-
-            .card .url,
-            .card .method,
-            .card .note {
-                font-size: 14px;
             }
 
             .status-ok {
@@ -88,7 +83,6 @@
                 {{ end }}
                     <div class="name">{{$state.Name}}</div>
                     <div class="url">{{$state.URL}}</div>
-                    <div class="method">{{$state.Method}}</div>
                     <div class="note">{{$state.Note}}</div>
                 {{ if eq $state.Method "HTTP/S" }}
                     </a>
