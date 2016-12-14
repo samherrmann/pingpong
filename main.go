@@ -159,12 +159,10 @@ func monitorNodes() {
 				if strings.HasPrefix(state.URL, "http") {
 					state.Method = "HTTP/S"
 
-					code, err := getHTTPStatus(state.URL)
+					_, err := getHTTPStatus(state.URL)
 					if err != nil {
 						state.Note = err.Error()
-					}
-
-					if code >= 200 && code < 300 {
+					} else {
 						state.IsOK = true
 					}
 
