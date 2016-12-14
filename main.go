@@ -127,7 +127,7 @@ func registerUI() error {
 	}
 
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		tpl.Execute(w, &ViewModel{*interval, nodeStatesBuffer.Get()})
+		tpl.Execute(w, &ViewModel{*interval, nodeStatesBuffer.Get(), version})
 	})
 	return nil
 }
