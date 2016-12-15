@@ -8,21 +8,19 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"sort"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/samherrmann/pingpong/config"
+	"github.com/samherrmann/pingpong/network"
 	"github.com/samherrmann/pingpong/ping"
 )
 
 var (
-	port             *int
-	interval         *int
-	insecure         *bool
-	configFileName   *string
-	nodeStatesBuffer = NewNodeStatesBuffer()
+	port           *int
+	interval       *int
+	insecure       *bool
+	configFileName *string
 
 	// timeout is the network node-polling
 	// timeout in seconds.
@@ -47,15 +45,16 @@ func main() {
 		return
 	}
 
-	err = registerUI()
+	netNodes := network.NewNodesBuffer(config.Nodes())
+	monitorNodes(netNodes)
+
+	err = registerUI(netNodes)
 	if err != nil {
 		log.Printf("Error while registering UI: %v", err)
 		return
 	}
 
-	registerAPI()
-	setupNodes()
-	monitorNodes()
+	registerAPI(netNodes)
 
 	err = listenAndServe()
 	if err != nil {
@@ -121,49 +120,25 @@ func postFlagsParsingInit() {
 
 // registerUI registers an HTTP handler function that presents the results
 // in a web user interface
-func registerUI() error {
+func registerUI(nb *network.NodesBuffer) error {
 	tpl, err := template.New("index.html").Parse(indexHTML)
 	if err != nil {
 		return err
 	}
 
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		tpl.Execute(w, &ViewModel{*interval, nodeStatesBuffer.Get(), version})
+		tpl.Execute(w, &ViewModel{*interval, nb.Get(), version})
 	})
 	return nil
 }
 
 // registerAPI registers an HTTP handler function that provides  the results
 // in JSON format
-func registerAPI() {
+func registerAPI(nb *network.NodesBuffer) {
 	http.HandleFunc("/json", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(nodeStatesBuffer.Get())
+		json.NewEncoder(w).Encode(nb.Get())
 	})
-}
-
-// monitorNodes calls the getHTTPStatus function for
-// all addresses in the config file that have a "http"
-// prefix, and calls the ping function for all other
-// provided addresses. This function is executed in a
-// goroutine and is therefore non-blocking.
-func setupNodes() {
-
-	states := new(NodeStates)
-	for name, url := range config.Nodes {
-		state := new(NodeState)
-		state.Name = name
-		state.URL = url
-
-		if strings.HasPrefix(state.URL, "http") {
-			state.Method = "HTTP/S"
-		} else {
-			state.Method = "Ping"
-		}
-		*states = append(*states, *state)
-	}
-	sort.Sort(states)
-	nodeStatesBuffer.Set(states)
 }
 
 // monitorNodes calls the getHTTPStatus function for
@@ -172,17 +147,17 @@ func setupNodes() {
 // provided addresses. This function creates separate
 // goroutines for each network node under test and is
 // therefore non-blocking.
-func monitorNodes() {
-	nodes := nodeStatesBuffer.Get()
+func monitorNodes(nb *network.NodesBuffer) {
+	nodes := nb.Get()
 
 	for _, n := range *nodes {
-		go func(node NodeState) {
+		go func(node network.Node) {
 			for {
 				var err error
-				if node.Method == "HTTP/S" {
+				if node.Method == network.MonitorMethodHTTP {
 					_, err = getHTTPStatus(node.URL)
 				}
-				if node.Method == "Ping" {
+				if node.Method == network.MonitorMethodPing {
 					err = ping.Run(node.URL, timeout)
 				}
 				if err != nil {
@@ -192,7 +167,7 @@ func monitorNodes() {
 					node.Note = ""
 					node.IsOK = true
 				}
-				nodeStatesBuffer.Update(&node)
+				nb.Update(&node)
 				time.Sleep(time.Duration(*interval) * time.Second)
 			}
 		}(n)

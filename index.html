@@ -76,15 +76,15 @@
     </head>
     <body>
         <h1>pingpong - Network Nodes Status</h1>
-        {{ range $state := .States }}
-            <div class="card {{if $state.IsOK}} status-ok {{ else }} status-failure {{ end }}">
-                {{ if eq $state.Method "HTTP/S" }}
-                    <a href="{{ $state.URL }}" target="_blank">
+        {{ range $node := .Nodes }}
+            <div class="card {{if $node.IsOK}} status-ok {{ else }} status-failure {{ end }}">
+                {{ if eq $node.Method "HTTP/S" }}
+                    <a href="{{ $node.URL }}" target="_blank">
                 {{ end }}
-                    <div class="name">{{$state.Name}}</div>
-                    <div class="url">{{$state.URL}}</div>
-                    <div class="note">{{$state.Note}}</div>
-                {{ if eq $state.Method "HTTP/S" }}
+                    <div class="name">{{$node.Name}}</div>
+                    <div class="url">{{$node.URL}}</div>
+                    <div class="note">{{$node.Note}}</div>
+                {{ if eq $node.Method "HTTP/S" }}
                     </a>
                 {{ end }}
             </div>

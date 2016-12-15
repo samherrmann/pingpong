@@ -3,6 +3,10 @@ package config
 import (
 	"encoding/json"
 	"os"
+	"sort"
+	"strings"
+
+	"github.com/samherrmann/pingpong/network"
 )
 
 const (
@@ -10,8 +14,26 @@ const (
 )
 
 var (
-	Nodes map[string]string
+	nodes *map[string]string
 )
+
+func Nodes() *network.Nodes {
+	states := new(network.Nodes)
+	for name, url := range *nodes {
+		state := new(network.Node)
+		state.Name = name
+		state.URL = url
+
+		if strings.HasPrefix(state.URL, "http") {
+			state.Method = network.MonitorMethodHTTP
+		} else {
+			state.Method = network.MonitorMethodPing
+		}
+		*states = append(*states, *state)
+	}
+	sort.Sort(states)
+	return states
+}
 
 // ParseFile decodes the configuration JSON
 // file into a map.
@@ -22,7 +44,7 @@ func ParseFile(fileName string) error {
 	}
 	defer file.Close()
 
-	err = json.NewDecoder(file).Decode(&Nodes)
+	err = json.NewDecoder(file).Decode(&nodes)
 	return err
 }
 
