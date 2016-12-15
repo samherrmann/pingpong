@@ -39,22 +39,22 @@ func main() {
 	parseFlags()
 	postFlagsParsingInit()
 
-	err := parseConfigFile()
+	nodes, err := parseConfigFile()
 	if err != nil {
 		log.Printf("Error while parsing config file: %v", err)
 		return
 	}
 
-	netNodes := network.NewNodesBuffer(config.Nodes())
-	monitorNodes(netNodes)
+	nodesBuff := network.NewNodesBuffer(nodes)
+	monitorNodes(nodesBuff)
 
-	err = registerUI(netNodes)
+	err = registerUI(nodesBuff)
 	if err != nil {
 		log.Printf("Error while registering UI: %v", err)
 		return
 	}
 
-	registerAPI(netNodes)
+	registerAPI(nodesBuff)
 
 	err = listenAndServe()
 	if err != nil {
@@ -65,23 +65,23 @@ func main() {
 
 // parseConfigFile decodes the configuration JSON
 // file into a map.
-func parseConfigFile() error {
+func parseConfigFile() (*network.Nodes, error) {
 	// Attempt to parse config file. If successful,
 	// exit immediately.
-	parseErr := config.ParseFile(*configFileName)
+	nodes, parseErr := config.ParseFile(*configFileName)
 	if parseErr == nil {
-		return nil
+		return nodes, nil
 	}
 
 	// Does file actually exist? If yes, return parse-error
 	if _, err := os.Stat(*configFileName); err == nil {
-		return parseErr
+		return nil, parseErr
 	}
 
 	// Are we attempting to load the default config file?
 	// If no, return parse-error
 	if *configFileName != config.DefaultFileName {
-		return parseErr
+		return nil, parseErr
 	}
 
 	// Default config file is requested but does
@@ -89,16 +89,16 @@ func parseConfigFile() error {
 	// create one for them.
 	err := config.WriteDefaultFile()
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	// Now try parsing the generated config file.
-	err = config.ParseFile(*configFileName)
+	nodes, err = config.ParseFile(*configFileName)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	log.Println("Config file \"" + *configFileName + "\" was not found. A default file was created and loaded instead.")
-	return nil
+	return nodes, nil
 }
 
 func parseFlags() {

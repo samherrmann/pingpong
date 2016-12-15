@@ -1,6 +1,10 @@
 package network
 
-import "sync"
+import (
+	"sort"
+	"strings"
+	"sync"
+)
 
 const (
 	MonitorMethodHTTP = "HTTP/S"
@@ -39,6 +43,29 @@ func (n Nodes) Swap(i, j int) {
 	n[i], n[j] = n[j], n[i]
 }
 
+// MakeNodes creates a Nodes slice from the provided
+// map in which the keys are expected to be the names
+// of the nodes and the values are expected to be the
+// addresses of the nodes.
+func MakeNodes(nodesMap map[string]string) *Nodes {
+	ns := new(Nodes)
+	for name, url := range nodesMap {
+		n := new(Node)
+		n.Name = name
+		n.URL = url
+
+		if strings.HasPrefix(n.URL, "http") {
+			n.Method = MonitorMethodHTTP
+		} else {
+			n.Method = MonitorMethodPing
+		}
+		*ns = append(*ns, *n)
+	}
+	sort.Sort(ns)
+	return ns
+}
+
+// NewNodesBuffer returns a NodesBuffer struct
 func NewNodesBuffer(nodes *Nodes) *NodesBuffer {
 	return &NodesBuffer{
 		mutex: &sync.Mutex{},
@@ -46,6 +73,9 @@ func NewNodesBuffer(nodes *Nodes) *NodesBuffer {
 	}
 }
 
+// NodesBuffer allows for safe
+// asyn-operations on a Nodes
+// slice.
 type NodesBuffer struct {
 	nodes *Nodes
 	mutex *sync.Mutex
