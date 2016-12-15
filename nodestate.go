@@ -56,3 +56,13 @@ func (b *NodesStatesBuffer) Set(states *NodeStates) {
 	defer b.mutex.Unlock()
 	b.states = states
 }
+
+func (b *NodesStatesBuffer) Update(state *NodeState) {
+	b.mutex.Lock()
+	defer b.mutex.Unlock()
+	for i := range *b.states {
+		if (*b.states)[i].URL == state.URL {
+			(*b.states)[i] = *state
+		}
+	}
+}

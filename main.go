@@ -54,6 +54,7 @@ func main() {
 	}
 
 	registerAPI()
+	setupNodes()
 	monitorNodes()
 
 	err = listenAndServe()
@@ -146,44 +147,56 @@ func registerAPI() {
 // prefix, and calls the ping function for all other
 // provided addresses. This function is executed in a
 // goroutine and is therefore non-blocking.
-func monitorNodes() {
-	go func() {
-		for {
-			states := &NodeStates{}
+func setupNodes() {
 
-			for name, url := range config.Nodes {
-				state := &NodeState{}
-				state.Name = name
-				state.URL = url
+	states := new(NodeStates)
+	for name, url := range config.Nodes {
+		state := new(NodeState)
+		state.Name = name
+		state.URL = url
 
-				if strings.HasPrefix(state.URL, "http") {
-					state.Method = "HTTP/S"
-
-					_, err := getHTTPStatus(state.URL)
-					if err != nil {
-						state.Note = err.Error()
-					} else {
-						state.IsOK = true
-					}
-
-				} else {
-					state.Method = "Ping"
-
-					err := ping.Run(state.URL, timeout)
-					if err != nil {
-						state.Note = err.Error()
-					} else {
-						state.IsOK = true
-					}
-				}
-
-				*states = append(*states, *state)
-			}
-			sort.Sort(states)
-			nodeStatesBuffer.Set(states)
-			time.Sleep(time.Duration(*interval) * time.Second)
+		if strings.HasPrefix(state.URL, "http") {
+			state.Method = "HTTP/S"
+		} else {
+			state.Method = "Ping"
 		}
-	}()
+		*states = append(*states, *state)
+	}
+	sort.Sort(states)
+	nodeStatesBuffer.Set(states)
+}
+
+// monitorNodes calls the getHTTPStatus function for
+// all addresses in the config file that have a "http"
+// prefix, and calls the ping function for all other
+// provided addresses. This function creates separate
+// goroutines for each network node under test and is
+// therefore non-blocking.
+func monitorNodes() {
+	nodes := nodeStatesBuffer.Get()
+
+	for _, n := range *nodes {
+		go func(node NodeState) {
+			for {
+				var err error
+				if node.Method == "HTTP/S" {
+					_, err = getHTTPStatus(node.URL)
+				}
+				if node.Method == "Ping" {
+					err = ping.Run(node.URL, timeout)
+				}
+				if err != nil {
+					node.Note = err.Error()
+					node.IsOK = false
+				} else {
+					node.Note = ""
+					node.IsOK = true
+				}
+				nodeStatesBuffer.Update(&node)
+				time.Sleep(time.Duration(*interval) * time.Second)
+			}
+		}(n)
+	}
 }
 
 // getHTTPStatus issues an HTTP GET call to the specified URL
