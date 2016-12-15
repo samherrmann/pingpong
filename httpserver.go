@@ -35,7 +35,14 @@ func registerAPI(nb *network.NodesBuffer) {
 	})
 }
 
-func listenAndServe() error {
+func listenAndServe(nb *network.NodesBuffer) error {
+	registerAPI(nb)
+
+	err := registerUI(nb)
+	if err != nil {
+		return err
+	}
+
 	log.Println("Listening on port " + strconv.Itoa(*port))
 	return http.ListenAndServe(":"+strconv.Itoa(*port), nil)
 }

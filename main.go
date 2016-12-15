@@ -16,15 +16,10 @@ func main() {
 	}
 	nodesBuff := network.NewNodesBuffer(nodes)
 	monitorNodes(nodesBuff)
-	err = registerUI(nodesBuff)
+
+	err = listenAndServe(nodesBuff)
 	if err != nil {
-		log.Printf("Error while registering UI: %v", err)
-		return
-	}
-	registerAPI(nodesBuff)
-	err = listenAndServe()
-	if err != nil {
-		log.Printf("Error while listening for requests: %v", err)
+		log.Printf("Error while setting up web server: %v", err)
 		return
 	}
 }
