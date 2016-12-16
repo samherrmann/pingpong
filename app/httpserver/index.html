@@ -69,7 +69,7 @@
             function periodicReload() {
                 setInterval(function() {
                     location.reload()
-                }, {{.PollingInterval}} * 1000)
+                }, {{ .PollingInterval }} * 1000)
             };
             window.onload = periodicReload;
         </script>
@@ -77,16 +77,10 @@
     <body>
         <h1>pingpong - Network Nodes Status</h1>
         {{ range $node := .Nodes }}
-            <div class="card {{if $node.IsOK}} status-ok {{ else }} status-failure {{ end }}">
-                {{ if eq $node.Method "HTTP/S" }}
-                    <a href="{{ $node.URL }}" target="_blank">
-                {{ end }}
-                    <div class="name">{{$node.Name}}</div>
-                    <div class="url">{{$node.URL}}</div>
-                    <div class="note">{{$node.Note}}</div>
-                {{ if eq $node.Method "HTTP/S" }}
-                    </a>
-                {{ end }}
+            <div class="card {{ if $node.IsOk }} status-ok {{ else }} status-failure {{ end }}">
+                <div class="name">{{ $node.Name }}</div>
+                <div class="url">{{ $node.Addr }}</div>
+                <div class="note">{{ $node.Note }}</div>
             </div>
         {{ end }}
         <div class="footer">{{ .Version }}</div>

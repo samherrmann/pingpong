@@ -11,17 +11,17 @@ import (
 // Note: run 'go generate' before 'go build'
 func main() {
 	// open source
-	in, err := os.Open("index.html")
+	in, err := os.Open("app/httpserver/index.html")
 	panicIf(err)
 	defer in.Close()
 
 	// open destination
-	out, err := os.Create("index.html.go")
+	out, err := os.Create("app/httpserver/index.html.go")
 	panicIf(err)
 	defer out.Close()
 
 	// write header
-	_, err = out.Write([]byte("package main\n\nconst (\nindexHTML = `"))
+	_, err = out.Write([]byte("package httpserver\n\nconst (\nindexHTML = `"))
 	panicIf(err)
 
 	// copy content

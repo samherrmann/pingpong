@@ -4,4 +4,4 @@
 dist/
 *.exe
 *.html.go
-config.json
+pingpong.config.json
